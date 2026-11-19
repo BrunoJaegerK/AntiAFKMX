@@ -15,29 +15,21 @@ public class MessageUtils {
 
     public String formatMessage(String key, Player player, Object... params) {
         String message = config.getString("messages." + key, "");
-        
-        if (message.isEmpty()) {
-            return "";
-        }
-        
+        if (message.isEmpty()) return "";
         message = message.replace("{prefix}", prefix);
-        
-        if (player != null) {
-            message = message.replace("{player}", player.getName());
-        }
-        
-        if (params.length >= 2) {
-            for (int i = 0; i < params.length; i += 2) {
-                if (params[i] instanceof String && i + 1 < params.length) {
-                    message = message.replace("{" + params[i] + "}", String.valueOf(params[i + 1]));
-                }
+        if (player != null) message = message.replace("{player}", player.getName());
+        for (int i = 0; i + 1 < params.length; i += 2) {
+            if (params[i] instanceof String) {
+                message = message.replace("{" + params[i] + "}", String.valueOf(params[i + 1]));
             }
         }
-        
         return TextFormat.colorize(message);
     }
-    
+
     public String getKickReason() {
-        return TextFormat.colorize(config.getString("messages.kick-reason", "You have been kicked for being AFK for too long."));
+        return TextFormat.colorize(config.getString(
+                "messages.kick-reason",
+                "Has sido expulsado por permanecer inactivo demasiado tiempo."
+        ));
     }
-} 
+}

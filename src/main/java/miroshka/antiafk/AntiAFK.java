@@ -22,149 +22,152 @@ public class AntiAFK extends PluginBase implements Listener {
     private Map<String, PlayerData> playerDataMap;
     private Config config;
     private MessageUtils messageUtils;
-    
     private int afkTimeMinutes;
     private int kickTimeMinutes;
     private int warningTimeMinutes;
     private boolean broadcastAfk;
     private List<String> exemptPlayers;
+    private List<String> disabledWorlds;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         this.config = getConfig();
-        
         this.playerDataMap = new HashMap<>();
         this.messageUtils = new MessageUtils(config);
-        
         loadConfig();
-        
         getServer().getPluginManager().registerEvents(this, this);
-        
         startAfkCheckTask();
-        
-        this.getLogger().info(TextFormat.GREEN + "AntiAFK " + TextFormat.YELLOW + "v" + this.getDescription().getVersion() + TextFormat.GREEN + " successfully enabled!");
-        this.getLogger().info(TextFormat.AQUA + "-----------------------------------");
-        this.getLogger().info(TextFormat.YELLOW + "Follow us:");
-        this.getLogger().info(TextFormat.BLUE + "• Telegram: " + TextFormat.WHITE + "https://t.me/ForgePlugins");
-        this.getLogger().info(TextFormat.BLUE + "• VKontakte: " + TextFormat.WHITE + "https://vk.com/forgeplugin");
-        this.getLogger().info(TextFormat.BLUE + "• GitHub: " + TextFormat.WHITE + "https://github.com/Miroshka000");
-        this.getLogger().info(TextFormat.AQUA + "-----------------------------------");
+
+        getLogger().info(TextFormat.GREEN + "AntiAFK v" + getDescription().getVersion() + " activado correctamente.");
+        getLogger().info(TextFormat.AQUA + "-----------------------------------");
+        getLogger().info(TextFormat.YELLOW + "Detección multimundo habilitada.");
+        getLogger().info(TextFormat.AQUA + "-----------------------------------");
     }
 
     private void loadConfig() {
-        this.afkTimeMinutes = config.getInt("afk-time", 5);
-        this.kickTimeMinutes = config.getInt("kick-time", 10);
-        this.warningTimeMinutes = config.getInt("warning-time", 2);
-        this.broadcastAfk = config.getBoolean("broadcast-afk", true);
-        this.exemptPlayers = config.getStringList("exempt-players");
+        afkTimeMinutes = Math.max(1, config.getInt("afk-time", 5));
+        kickTimeMinutes = Math.max(1, config.getInt("kick-time", 10));
+        warningTimeMinutes = Math.max(0, config.getInt("warning-time", 2));
+        broadcastAfk = config.getBoolean("broadcast-afk", true);
+        exemptPlayers = config.getStringList("exempt-players");
+        disabledWorlds = config.getStringList("disabled-worlds");
     }
 
     private void startAfkCheckTask() {
+        // Muestrea posición y mundo cada segundo; no depende únicamente de PlayerMoveEvent.
         new NukkitRunnable() {
             @Override
             public void run() {
+                samplePlayerActivity();
                 checkPlayersAfkStatus();
             }
-        }.runTaskTimer(this, 20 * 60, 20 * 60);
+        }.runTaskTimer(this, 20, 20);
+    }
+
+    private void samplePlayerActivity() {
+        for (Player player : getServer().getOnlinePlayers().values()) {
+            String worldName = player.getLevel() == null ? "" : player.getLevel().getName();
+            if (disabledWorlds.contains(worldName)) {
+                PlayerData ignoredData = playerDataMap.get(player.getName());
+                if (ignoredData != null) {
+                    ignoredData.updateActivity();
+                    ignoredData.capturePosition(player);
+                }
+                continue;
+            }
+
+            PlayerData data = playerDataMap.get(player.getName());
+            if (data == null) {
+                playerDataMap.put(player.getName(), new PlayerData(player));
+            } else if (data.hasMovedOrChangedWorld(player)) {
+                updatePlayerActivity(player);
+            }
+        }
     }
 
     private void checkPlayersAfkStatus() {
-        long currentTime = System.currentTimeMillis();
-        
         for (Player player : getServer().getOnlinePlayers().values()) {
-            if (isPlayerExempt(player)) {
+            String worldName = player.getLevel() == null ? "" : player.getLevel().getName();
+            if (disabledWorlds.contains(worldName) || isPlayerExempt(player)) {
                 continue;
             }
-            
+
             String playerName = player.getName();
-            
-            if (!playerDataMap.containsKey(playerName)) {
+            PlayerData data = playerDataMap.get(playerName);
+            if (data == null) {
                 playerDataMap.put(playerName, new PlayerData(player));
                 continue;
             }
-            
-            PlayerData playerData = playerDataMap.get(playerName);
-            long inactiveTimeMinutes = playerData.getInactiveTime() / (1000 * 60);
-            
-            if (inactiveTimeMinutes >= kickTimeMinutes) {
+
+            long inactiveMinutes = data.getInactiveTime() / 60000L;
+            if (inactiveMinutes >= kickTimeMinutes) {
                 player.kick(messageUtils.getKickReason());
                 playerDataMap.remove(playerName);
                 continue;
             }
-            
-            if (inactiveTimeMinutes >= (kickTimeMinutes - warningTimeMinutes) && !playerData.isWarned()) {
-                playerData.setWarned(true);
+
+            int warningThreshold = Math.max(0, kickTimeMinutes - warningTimeMinutes);
+            if (inactiveMinutes >= warningThreshold && !data.isWarned()) {
+                data.setWarned(true);
                 player.sendMessage(messageUtils.formatMessage("warning", player, "time", warningTimeMinutes));
                 continue;
             }
-            
-            if (inactiveTimeMinutes >= afkTimeMinutes && !playerData.isAfk()) {
-                playerData.setAfk(true);
-                
+
+            if (inactiveMinutes >= afkTimeMinutes && !data.isAfk()) {
+                data.setAfk(true);
                 if (broadcastAfk) {
                     getServer().broadcastMessage(messageUtils.formatMessage("afk", player));
                 }
             }
         }
     }
-    
+
     private boolean isPlayerExempt(Player player) {
-        if (player.hasPermission("antiafk.bypass")) {
-            return true;
-        }
-        
-        return exemptPlayers.contains(player.getName().toLowerCase());
+        return player.hasPermission("antiafk.bypass")
+                || exemptPlayers.contains(player.getName().toLowerCase());
     }
-    
+
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
-        playerDataMap.put(player.getName(), new PlayerData(player));
+        playerDataMap.put(event.getPlayer().getName(), new PlayerData(event.getPlayer()));
     }
-    
+
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         playerDataMap.remove(event.getPlayer().getName());
     }
-    
+
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         updatePlayerActivity(event.getPlayer());
     }
-    
+
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         updatePlayerActivity(event.getPlayer());
     }
-    
+
     @EventHandler
     public void onPlayerChat(PlayerChatEvent event) {
         updatePlayerActivity(event.getPlayer());
     }
-    
+
     @EventHandler
     public void onPlayerCommand(PlayerCommandPreprocessEvent event) {
         updatePlayerActivity(event.getPlayer());
     }
-    
+
     private void updatePlayerActivity(Player player) {
-        String playerName = player.getName();
-        
-        if (playerDataMap.containsKey(playerName)) {
-            PlayerData playerData = playerDataMap.get(playerName);
-            
-            if (playerData.isAfk()) {
-                playerData.setAfk(false);
-                
-                if (broadcastAfk) {
-                    getServer().broadcastMessage(messageUtils.formatMessage("no-longer-afk", player));
-                }
-            }
-            
-            playerData.updateActivity();
-        } else {
-            playerDataMap.put(playerName, new PlayerData(player));
+        PlayerData data = playerDataMap.get(player.getName());
+        if (data == null) {
+            playerDataMap.put(player.getName(), new PlayerData(player));
+            return;
         }
+        if (data.isAfk() && broadcastAfk) {
+            getServer().broadcastMessage(messageUtils.formatMessage("no-longer-afk", player));
+        }
+        data.updateActivity();
+        data.capturePosition(player);
     }
-} 
+}

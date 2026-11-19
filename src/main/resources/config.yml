@@ -1,27 +1,30 @@
-# AntiAFK Configuration
+# Configuración de AntiAFK
 
-# Time in minutes after which a player is considered AFK
-afk-time: 1
+# Minutos de inactividad para marcar a un jugador como AFK.
+afk-time: 5
 
-# Time in minutes after which an AFK player will be kicked
-kick-time: 1
+# Minutos de inactividad antes de expulsar al jugador.
+kick-time: 10
 
-# Warning message sent to player before kick (in minutes)
-warning-time: 1
+# Minutos de anticipación del aviso antes de la expulsión.
+warning-time: 2
 
-# Whether to broadcast a message when a player goes AFK
+# Anunciar cuando un jugador entra o sale del estado AFK.
 broadcast-afk: true
 
-# Messages
+# Mensajes predeterminados (puedes personalizarlos y usar colores con &).
 messages:
   prefix: "&7[&cAntiAFK&7] "
-  afk: "{prefix}&e{player} &7is now AFK."
-  no-longer-afk: "{prefix}&e{player} &7is no longer AFK."
-  warning: "{prefix}&cWarning! &7You will be kicked for inactivity in &e{time} &7minutes."
-  kick-reason: "You have been kicked for being AFK for too long."
+  afk: "{prefix}&e{player} &7ahora está AFK."
+  no-longer-afk: "{prefix}&e{player} &7ya no está AFK."
+  warning: "{prefix}&c¡Atención! &7Serás expulsado por inactividad en &e{time} &7minutos."
+  kick-reason: "Has sido expulsado por permanecer inactivo demasiado tiempo."
 
-# Exclude specific players or groups from AFK detection
-# Players with these permissions will be excluded: antiafk.bypass
+# Mundos en los que no se aplicará la detección AFK.
+# Usa los nombres exactos. Lista vacía = detección en todos los mundos.
+disabled-worlds: []
+
+# Jugadores excluidos. También se admite el permiso antiafk.bypass.
 exempt-players:
   - "admin"
-  - "moderator" 
+  - "moderator"
