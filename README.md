@@ -1,59 +1,57 @@
-# 🎮 AntiAFK Plugin for Nukkit
+# AntiAFKMX
 
-🔍 A powerful AFK detection plugin that automatically identifies and kicks inactive players on your Nukkit Minecraft server!
+Plugin de detección de inactividad para servidores Nukkit. Detecta jugadores AFK, envía avisos y puede expulsarlos después del tiempo configurado.
 
-## ✨ Features
+## Características
 
-- 🔎 **Automatic AFK Detection** - Detects when players stop moving, chatting, or interacting
-- 👋 **AFK Kick System** - Removes inactive players after a configurable time period
-- ⚠️ **Warning System** - Alerts players before they get kicked
-- 📢 **Broadcast Messages** - Notifies server when players go AFK or return
-- 🛡️ **Permission-Based Bypass** - Exempt specific players or groups from AFK detection
-- 🔧 **Fully Configurable** - Customize all timers, messages, and behaviors
+- Detección de actividad en todos los mundos cargados.
+- Muestreo periódico de posición y mundo, además de eventos de movimiento, chat, comandos e interacción.
+- Reconoce cambios de mundo y teletransportes como actividad.
+- Avisos antes de expulsar a jugadores inactivos.
+- Mensajes predeterminados en español y personalizables.
+- Exenciones mediante lista de jugadores o permiso.
+- Lista configurable de mundos excluidos.
 
-## 📋 Commands and Permissions
+## Permisos
 
-- 🔑 `antiafk.bypass` - Players with this permission will not be marked as AFK or kicked
+- `antiafk.bypass`: excluye al jugador de la detección AFK y de las expulsiones.
 
-## ⚙️ Configuration
+## Configuración
 
 ```yaml
-# Time in minutes after which a player is considered AFK
-afk-time: 1
-
-# Time in minutes after which an AFK player will be kicked
-kick-time: 1
-
-# Warning message sent to player before kick (in minutes)
-warning-time: 1
-
-# Whether to broadcast a message when a player goes AFK
+afk-time: 5
+kick-time: 10
+warning-time: 2
 broadcast-afk: true
 
-# Messages are fully customizable in config.yml
+# Mundos excluidos. Vacío = todos los mundos.
+disabled-worlds: []
+
+exempt-players:
+  - "admin"
+  - "moderator"
+
+messages:
+  prefix: "&7[&cAntiAFK&7] "
+  afk: "{prefix}&e{player} &7ahora está AFK."
+  no-longer-afk: "{prefix}&e{player} &7ya no está AFK."
+  warning: "{prefix}&c¡Atención! &7Serás expulsado por inactividad en &e{time} &7minutos."
+  kick-reason: "Has sido expulsado por permanecer inactivo demasiado tiempo."
 ```
 
-## 💻 Installation
+La detección se aplica a todos los mundos por defecto. Para excluir alguno, agrega su nombre exacto a `disabled-worlds`.
 
-1. Download the latest release
-2. Place the .jar file in your plugins folder
-3. Restart your server
-4. Configure settings in config.yml as needed
+## Instalación
 
-## 🌟 Why Choose AntiAFK?
+1. Descarga el JAR desde **Actions / Artifacts** o desde Releases.
+2. Colócalo en la carpeta `plugins`.
+3. Reinicia el servidor.
+4. Ajusta `plugins/AntiAFK/config.yml` si necesitas cambiar tiempos o mensajes.
 
-- 🚀 **Performance Friendly** - Minimal impact on server resources
-- 🧠 **Smart Detection** - Monitors multiple types of player activity
-- 🛠️ **Easy Setup** - Works great out of the box with sensible defaults
-- 📝 **Customizable** - Tailor the plugin to fit your server's needs
+## Compilación
 
-## 🔄 Version Information
+El proyecto utiliza Gradle y Nukkit MOT. Compila con `./gradlew clean build`.
 
-Current version: 1.0
-Nukkit API: 1.0.0
+## Créditos y licencia
 
-## 📱 Contact
-
-- Telegram: https://t.me/ForgePlugins
-- VKontakte: https://vk.com/forgeplugin
-- GitHub: https://github.com/Miroshka000 
+Este repositorio es un fork de AntiAFKMX y conserva la licencia GPL-3.0 del proyecto original.

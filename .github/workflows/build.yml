@@ -1,0 +1,34 @@
+name: Build AntiAFKMX
+
+on:
+  push:
+    branches: [ master, feature/multiverse-spanish-messages ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Preparar Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Compilar plugin
+        run: chmod +x gradlew && ./gradlew --no-daemon clean build
+      - name: Publicar JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: AntiAFK-${{ github.sha }}
+          path: build/libs/AntiAFK-*.jar
+          if-no-files-found: error
+          retention-days: 30
